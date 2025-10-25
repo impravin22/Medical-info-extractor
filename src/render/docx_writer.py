@@ -38,7 +38,8 @@ def render_report_to_docx(
     layout: LayoutSpec,
     template_path: Optional[str | Path] = None,
 ) -> None:
-    doc = Document(str(template_path)) if template_path else Document()
+    # Create fresh document (template not used for now as it requires placeholder replacement)
+    doc = Document()
 
     # Header block
     h = report.claimant
@@ -95,13 +96,10 @@ def render_report_to_docx(
     doc.add_paragraph(f"Last Updated: {datetime.today().strftime('%A, %B %d, %Y')}")
 
     # Timeline table
-    # If the template already contains a table, reuse the first one; else create
-    table = (
-        doc.tables[0] if doc.tables else doc.add_table(rows=1, cols=len(layout.columns))
-    )
-    # Ensure header row exists and has correct number of columns
-    while len(table.rows[0].cells) < len(layout.columns):
-        table.add_column(100000)
+    table = doc.add_table(rows=1, cols=len(layout.columns))
+    table.style = "Light Grid Accent 1"
+
+    # Header row
     hdr_cells = table.rows[0].cells
     for idx, col in enumerate(layout.columns):
         hdr_cells[idx].text = col
