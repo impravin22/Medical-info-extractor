@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import List
+from typing import List, Literal, Any
 
 from src.domain.schema import Claimant, Event, Report
 from src.utils.dates import parse_date_strict
@@ -10,13 +10,20 @@ from src.llm.reason_summarizer import (
     extract_impairments_with_llm,
     extract_events_with_llm,
 )
+from src.llm.nebius_llm import (
+    extract_claimant_with_llm_nebius,
+    extract_impairments_with_llm_nebius,
+    extract_events_with_llm_nebius,
+)
 
 
-def build_report(pages: List[str], llm_model) -> Report:
+def build_report(
+    pages: List[str], llm_model: Any, backend: Literal["gemini", "nebius"] = "nebius", model_name: str = "NousResearch/Hermes-4-405B"
+) -> Report:
     """Build report from PDF pages using LLM."""
-    claimant = extract_claimant_header(pages, llm_model)
-    impairments = extract_impairments(pages, llm_model)
-    events = extract_events(pages, llm_model)
+    claimant = extract_claimant_header(pages, llm_model, backend, model_name)
+    impairments = extract_impairments(pages, llm_model, backend, model_name)
+    events = extract_events(pages, llm_model, backend, model_name)
 
     # Calculate ages
     age_at_aod = None
@@ -44,12 +51,18 @@ def build_report(pages: List[str], llm_model) -> Report:
     )
 
 
-def extract_claimant_header(pages: List[str], model) -> Claimant:
+def extract_claimant_header(
+    pages: List[str], model: Any, backend: Literal["gemini", "nebius"] = "nebius", model_name: str = "NousResearch/Hermes-4-405B"
+) -> Claimant:
     """Extract claimant from first few pages."""
     text = "\n".join(
         pages[:12]
     )  # Look at many pages to find all fields (DOB on pg 4, education on pg 9)
-    result = extract_claimant_with_llm(model, text)
+    
+    if backend == "nebius":
+        result = extract_claimant_with_llm_nebius(model, model_name, text)
+    else:
+        result = extract_claimant_with_llm(model, text)
 
     # Parse dates from various field names
     dob = None
@@ -117,22 +130,38 @@ def extract_claimant_header(pages: List[str], model) -> Claimant:
     )
 
 
-def extract_impairments(pages: List[str], model) -> List[str]:
+def extract_impairments(
+    pages: List[str], model: Any, backend: Literal["gemini", "nebius"] = "nebius", model_name: str = "NousResearch/Hermes-4-405B"
+) -> List[str]:
     """Extract impairments from PDF."""
     text = "\n".join(pages[:12])  # Look at more pages to find impairments section
-    return extract_impairments_with_llm(model, text)
+    
+    if backend == "nebius":
+        return extract_impairments_with_llm_nebius(model, model_name, text)
+    else:
+        return extract_impairments_with_llm(model, text)
 
 
-def extract_events(pages: List[str], model) -> List[Event]:
+def extract_events(
+    pages: List[str], model: Any, backend: Literal["gemini", "nebius"] = "nebius", model_name: str = "NousResearch/Hermes-4-405B"
+) -> List[Event]:
     """Extract medical events from pages."""
     events = []
 
-    # Process first 50 pages for assessment (adjust for full PDF processing)
-    for page_idx, page in enumerate(pages[:50], start=1):
+    # Process ALL pages to capture all medical events
+    print(f"Processing {len(pages)} pages for medical events...")
+    for page_idx, page in enumerate(pages, start=1):
         if len(page.strip()) < 50:
             continue
+        
+        # Progress indicator every 10 pages
+        if page_idx % 10 == 0:
+            print(f"  Processed {page_idx}/{len(pages)} pages...")
 
-        results = extract_events_with_llm(model, page, page_idx)
+        if backend == "nebius":
+            results = extract_events_with_llm_nebius(model, model_name, page, page_idx)
+        else:
+            results = extract_events_with_llm(model, page, page_idx)
 
         for item in results:
             try:
@@ -163,4 +192,6 @@ def extract_events(pages: List[str], model) -> List[Event]:
             seen.add(key)
             unique.append(evt)
 
-    return sorted(unique, key=lambda e: e.date)[:15]
+    sorted_events = sorted(unique, key=lambda e: e.date)
+    print(f"Extracted {len(sorted_events)} unique medical events")
+    return sorted_events  # Return ALL events, no limit

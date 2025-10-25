@@ -9,6 +9,7 @@ from src.domain.layout import parse_layout_dsl
 from src.ingest.extractors import build_report
 from src.ingest.pdf_reader import extract_text_by_page
 from src.llm.reason_summarizer import init_llm_gemini
+from src.llm.nebius_llm import init_llm_nebius
 from src.render.docx_writer import render_report_to_docx
 from src.render.markdown_writer import render_report_to_markdown
 from src.utils.logging import configure_logging
@@ -38,15 +39,28 @@ def main() -> None:
 
     pages = extract_text_by_page(pdf_path)
 
-    # Initialize Gemini LLM
-    if not settings.gemini_api_key:
-        raise SystemExit(
-            "No API key provided. Set MSB_GEMINI_API_KEY or GOOGLE_API_KEY."
+    # Initialize LLM based on backend
+    if settings.llm_backend == "nebius":
+        if not settings.nebius_api_key:
+            raise SystemExit(
+                "No Nebius API key provided. Set MSB_NEBIUS_API_KEY or NEBIUS_API_KEY."
+            )
+        model = init_llm_nebius(
+            settings.nebius_api_key,
+            settings.nebius_model,
+            settings.nebius_base_url
         )
-    model = init_llm_gemini(settings.gemini_api_key, settings.gemini_model)
-
-    # Use LLM for extraction
-    report = build_report(pages, model)
+        logging.info(f"Using Nebius backend with model: {settings.nebius_model}")
+        report = build_report(pages, model, backend="nebius", model_name=settings.nebius_model)
+    else:
+        # Fallback to Gemini
+        if not settings.gemini_api_key:
+            raise SystemExit(
+                "No API key provided. Set MSB_GEMINI_API_KEY or GOOGLE_API_KEY."
+            )
+        model = init_llm_gemini(settings.gemini_api_key, settings.gemini_model)
+        logging.info(f"Using Gemini backend with model: {settings.gemini_model}")
+        report = build_report(pages, model, backend="gemini")
 
     # Set reason_summary to reason_raw
     for evt in report.events:

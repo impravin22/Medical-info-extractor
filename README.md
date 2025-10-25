@@ -7,17 +7,18 @@ A production-grade LLM-powered system for extracting structured medical informat
 This project implements an AI-assisted medical document processing pipeline that:
 - Extracts claimant information (name, SSN, dates, education) from PDF documents
 - Identifies alleged medical impairments and conditions
-- Extracts chronological medical visit history with provider details
+- Extracts chronological medical visit history with provider details from ENTIRE PDF
 - Generates structured output in both DOCX and Markdown formats
-- Uses Google's Gemini API for intelligent text extraction
+- Uses Nebius Hermes-4-405B model for intelligent, high-quality text extraction
 
 ## Technical Architecture
 
 ### Design Principles
-- **LLM-First Approach**: No hardcoded patterns or fallback values - all extraction is performed by Gemini LLM
+- **LLM-First Approach**: No hardcoded patterns or fallback values - all extraction is performed by LLM
 - **Pure Prompt Engineering**: Uses carefully crafted prompts with examples to guide accurate extraction
 - **Deterministic Output**: Structured data validation using Pydantic schemas
 - **Clean Separation**: Distinct layers for PDF ingestion, LLM extraction, and document rendering
+- **Full Document Processing**: Processes all pages to ensure no medical events are missed
 
 ### Project Structure
 
@@ -34,8 +35,9 @@ medical-summary-builder/
 │   │   ├── pdf_reader.py       # PDF text extraction with pdfplumber
 │   │   └── extractors.py       # Orchestration layer for LLM extraction
 │   ├── llm/
-│   │   ├── reason_summarizer.py  # Gemini LLM interface and prompts
-│   │   └── hf_llm.py          # Hugging Face interface (alternative backend)
+│   │   ├── nebius_llm.py        # Nebius (Hermes-4-405B) interface (primary)
+│   │   ├── reason_summarizer.py  # Gemini LLM interface (fallback)
+│   │   └── hf_llm.py          # Hugging Face interface (local models)
 │   ├── render/
 │   │   ├── docx_writer.py      # DOCX template rendering with python-docx
 │   │   └── markdown_writer.py  # Markdown output generation
@@ -76,9 +78,15 @@ uv sync --dev
 
 3. Configure environment variables:
 ```bash
-# Create .env file
-echo "MSB_GEMINI_API_KEY=your_api_key_here" > .env
-echo "MSB_GEMINI_MODEL=gemini-2.5-flash" >> .env
+# Create .env file with Nebius API (Primary)
+echo "MSB_LLM_BACKEND=nebius" > .env
+echo "MSB_NEBIUS_API_KEY=your_nebius_api_key_here" >> .env
+echo "MSB_NEBIUS_MODEL=NousResearch/Hermes-4-405B" >> .env
+
+# Alternative: Use Gemini (Fallback)
+# echo "MSB_LLM_BACKEND=gemini" > .env
+# echo "MSB_GEMINI_API_KEY=your_gemini_api_key_here" >> .env
+# echo "MSB_GEMINI_MODEL=gemini-1.5-flash" >> .env
 ```
 
 ## Usage
@@ -169,18 +177,32 @@ pre-commit run --all-files
 
 ## LLM Backend Options
 
-### Gemini API (Default)
+### Nebius Hermes-4-405B (Primary)
 
-The system uses Google's Gemini 2.5 Flash model by default for optimal balance of speed, cost, and accuracy.
+The system uses Nebius' Hermes-4-405B model via OpenAI-compatible API for state-of-the-art extraction quality. This powerful 405B parameter model excels at structured medical information extraction.
+
+Configuration:
+```bash
+MSB_LLM_BACKEND=nebius
+MSB_NEBIUS_API_KEY=your_nebius_api_key_here
+MSB_NEBIUS_MODEL=NousResearch/Hermes-4-405B
+MSB_NEBIUS_BASE_URL=https://api.studio.nebius.ai/v1/
+```
+
+Get your free API key at: https://studio.nebius.com
+
+### Gemini API (Alternative)
+
+Google's Gemini 1.5 Flash is available as a fallback option for fast processing.
 
 Configuration:
 ```bash
 MSB_LLM_BACKEND=gemini
 MSB_GEMINI_API_KEY=your_api_key_here
-MSB_GEMINI_MODEL=gemini-2.5-flash
+MSB_GEMINI_MODEL=gemini-1.5-flash
 ```
 
-### Open Source Models (Alternative)
+### Open Source Models (Local Inference)
 
 The codebase includes support for Hugging Face Transformers for local inference:
 
@@ -189,13 +211,13 @@ MSB_LLM_BACKEND=hf
 MSB_LLM_MODEL=Qwen/Qwen2.5-7B-Instruct
 ```
 
-**Note**: During development, open source model options (Llama 3.1, Qwen2.5, Phi-3.5) were tested but encountered local environment constraints (disk space limitations, compilation issues on macOS, quantization library compatibility). The Gemini API was selected as the primary backend for reliability and performance. The infrastructure for local model support remains in the codebase for future use when hardware constraints are resolved.
+**Note**: During development, open source model options (Llama 3.1, Qwen2.5, Phi-3.5) were tested but encountered local environment constraints (disk space limitations, compilation issues on macOS, quantization library compatibility). The cloud API backends (Nebius, Gemini) were selected for reliability and performance. The infrastructure for local model support remains in the codebase for future use when hardware constraints are resolved.
 
 ## Extraction Approach
 
 ### Prompt Engineering Strategy
 
-The system uses detailed, example-driven prompts to guide Gemini:
+The system uses detailed, example-driven prompts to guide the LLM (Nebius or Gemini):
 
 1. **Claimant Extraction**: 
    - Explicitly defines search patterns (e.g., "after 'Claimant:'")

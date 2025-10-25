@@ -7,11 +7,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict  # type: ignore[r
 
 
 class Settings(BaseSettings):
-    # Select LLM provider: "gemini" or "hf"
+    # Select LLM provider: "gemini", "nebius", or "hf"
     llm_backend: Annotated[
         str,
         Field(
-            default="gemini",
+            default="nebius",
             validation_alias=AliasChoices(
                 "MSB_LLM_BACKEND", "LLM_BACKEND", "llm_backend"
             ),
@@ -44,6 +44,35 @@ class Settings(BaseSettings):
             default=None,
             validation_alias=AliasChoices(
                 "MSB_GEMINI_API_KEY", "GOOGLE_API_KEY", "google_api_key"
+            ),
+        ),
+    ]
+
+    # Nebius API configuration
+    nebius_api_key: Annotated[
+        str | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices(
+                "MSB_NEBIUS_API_KEY", "NEBIUS_API_KEY", "nebius_api_key"
+            ),
+        ),
+    ]
+    nebius_model: Annotated[
+        str,
+        Field(
+            default="NousResearch/Hermes-4-405B",
+            validation_alias=AliasChoices(
+                "MSB_NEBIUS_MODEL", "NEBIUS_MODEL", "nebius_model"
+            ),
+        ),
+    ]
+    nebius_base_url: Annotated[
+        str,
+        Field(
+            default="https://api.studio.nebius.ai/v1/",
+            validation_alias=AliasChoices(
+                "MSB_NEBIUS_BASE_URL", "NEBIUS_BASE_URL", "nebius_base_url"
             ),
         ),
     ]
