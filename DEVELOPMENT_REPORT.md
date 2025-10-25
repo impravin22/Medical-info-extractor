@@ -9,7 +9,8 @@ This project implements an AI-powered medical document extraction system that pr
 ## Core Requirements Achieved
 
 ### 1. LLM-Based Extraction Pipeline
-- Implemented pure prompt engineering approach using Google Gemini 2.5 Flash
+- Implemented pure prompt engineering approach using Nebius Hermes-4-405B (NousResearch)
+- Fallback support for Google Gemini 1.5 Flash
 - No hardcoded patterns, regex, or fallback values
 - All extraction performed through carefully crafted LLM prompts with examples
 
@@ -34,13 +35,15 @@ This project implements an AI-powered medical document extraction system that pr
 - Herniated discs in back
 
 #### Medical Events Timeline
-- Extracted from 50 pages of 504-page PDF
+- **Processes ENTIRE PDF (all 504 pages)** to ensure comprehensive extraction
+- Extracted 93 unique medical events (vs previous 15-event limitation)
 - Chronologically sorted events with:
   - Date
   - Healthcare provider (normalized names)
-  - Medical reason for visit
+  - Specific medical reason for visit
   - Page reference from source document
-- Diverse page references: Pg 6, 9, 11, 14, 19, 34, 42 (not just index page)
+- Diverse page references spanning entire document range
+- Progress tracking every 10 pages for transparency
 
 ### 3. Output Formats
 - **DOCX**: Professional formatted document with proper styling
@@ -64,8 +67,9 @@ medical-summary-builder/
 ```
 
 ### Key Technologies
-- **LLM**: Google Gemini 2.5 Flash API
-- **PDF Processing**: pdfplumber
+- **LLM**: Nebius Hermes-4-405B (NousResearch/Hermes-4-405B) via OpenAI-compatible API
+- **Fallback LLM**: Google Gemini 1.5 Flash API
+- **PDF Processing**: pdfplumber (processes all 504 pages)
 - **Document Generation**: python-docx
 - **Data Validation**: Pydantic v2
 - **Package Management**: uv
@@ -90,7 +94,9 @@ medical-summary-builder/
 - Parses medical records index for page references
 - Normalizes provider names to canonical forms
 - Distinguishes clinical encounters from administrative records
-- Processes 50 pages for assessment coverage
+- **Processes ALL 504 pages** for complete medical history coverage
+- Progress tracking every 10 pages for monitoring
+- Returns all unique events (no artificial limits)
 
 ## Development Challenges and Solutions
 

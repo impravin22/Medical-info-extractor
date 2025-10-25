@@ -151,7 +151,8 @@ def extract_events(
     # Process ALL pages to capture all medical events
     print(f"Processing {len(pages)} pages for medical events...")
     for page_idx, page in enumerate(pages, start=1):
-        if len(page.strip()) < 50:
+        # Skip only truly empty pages (very low threshold to ensure completeness)
+        if len(page.strip()) < 10:
             continue
         
         # Progress indicator every 10 pages
@@ -170,7 +171,9 @@ def extract_events(
 
                 evt_date = parse_date_strict(item["date"])
 
-                if 2020 <= evt_date.year <= 2024:
+                # Accept all valid dates (no year filtering to ensure completeness)
+                # Valid medical records can span decades
+                if 1900 <= evt_date.year <= 2030:
                     events.append(
                         Event(
                             date=evt_date,
@@ -180,18 +183,23 @@ def extract_events(
                             facility=item.get("provider", "Unknown"),
                         )
                     )
-            except:
+            except Exception as e:
+                # Log parsing errors but continue processing
+                print(f"  Warning: Could not parse event on page {page_idx}: {e}")
                 continue
 
-    # Remove duplicates and sort
+    # Remove duplicates and sort - use date + provider + reason for more precise deduplication
     seen = set()
     unique = []
     for evt in events:
-        key = (evt.date, evt.provider)
+        # Use first 50 chars of reason to allow similar but not identical entries
+        reason_key = evt.reason_raw[:50] if evt.reason_raw else ""
+        key = (evt.date, evt.provider, reason_key)
         if key not in seen:
             seen.add(key)
             unique.append(evt)
 
     sorted_events = sorted(unique, key=lambda e: e.date)
-    print(f"Extracted {len(sorted_events)} unique medical events")
+    print(f"Extracted {len(sorted_events)} unique medical events from {len(pages)} pages")
+    print(f"Date range: {sorted_events[0].date if sorted_events else 'N/A'} to {sorted_events[-1].date if sorted_events else 'N/A'}")
     return sorted_events  # Return ALL events, no limit
