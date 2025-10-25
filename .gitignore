@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.pyright/
+.venv/
+venv/
+
+# Mac
+.DS_Store
+
+# Build/output
+dist/
+build/
+out/
+
+# Env
+.env
+.env.*
+*.lock
+
