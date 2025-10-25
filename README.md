@@ -283,7 +283,11 @@ The project is configured for GitHub Actions with:
 - Requires external LLM API (Gemini)
 - Limited to English language documents
 - PDF must have extractable text (no OCR)
-- Event extraction limited to first 15 pages for performance
+- Event extraction limited to first 50 pages (configurable in `src/ingest/extractors.py`)
+  - For this technical assessment, processing 50 pages provides sufficient coverage
+  - For production use with large PDFs (500+ pages), adjust the page limit in `extract_events()` function
+  - Located at line 131: `for page_idx, page in enumerate(pages[:50], start=1):`
+  - Change `[:50]` to `[:100]` or `[:]` for full PDF processing
 
 ### Potential Enhancements
 - OCR support for scanned documents
@@ -297,10 +301,15 @@ The project is configured for GitHub Actions with:
 
 ## Performance
 
-- Average processing time: 30-60 seconds per document (depends on LLM API response time)
+- Average processing time: 1-3 minutes per document (depends on LLM API response time and page count)
 - PDF parsing: < 1 second
-- LLM extraction: 20-50 seconds (15-20 API calls)
+- LLM extraction: 1-3 minutes (50 API calls for 50 pages)
 - Document rendering: < 1 second
+
+**Note**: Processing time scales with page count. For this assessment, 50 pages are processed. For production use with large PDFs, consider:
+- Implementing parallel LLM calls for faster processing
+- Caching extracted data for repeated runs
+- Adjusting page limit based on document size and requirements
 
 ## License
 

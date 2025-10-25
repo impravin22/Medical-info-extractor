@@ -123,16 +123,19 @@ def extract_events_with_llm(
 ) -> List[Dict[str, Any]]:
     """Extract medical events from a page."""
 
-    prompt = f"""Extract medical encounters from this page. Look for ACTUAL medical care, not just document titles.
+    prompt = f"""Extract medical encounters from this page. This may be an index/table listing records OR actual medical content.
 
 PAGE {page_num}:
 {text[:1500]}
 
+IMPORTANT: If you see a format like "8F: Office Treatment Records - Sterling Health Clinic 07/21/2021-07/06/2023 Pg 34",
+extract the ACTUAL page number from "Pg 34" and use that as ref_page (not the current page).
+
 For each medical visit/treatment, extract:
 
-1. DATE: In MM/DD/YYYY format (must be between 2020-2024)
+1. DATE: In MM/DD/YYYY format or date range start (must be between 2020-2024)
 
-2. PROVIDER: Healthcare facility name. Normalize these:
+2. PROVIDER: Healthcare facility name. Normalize:
    - "METRO HEALTH & WELLNESS #2" → "Metro Health & Wellness Center"
    - "METRO WELLNESS CLINIC" → "Metro Health & Wellness Center"  
    - "WILLOW CREEK MEDICAL" → "Willow Creek Medical Center"
@@ -140,30 +143,18 @@ For each medical visit/treatment, extract:
    - "STERLING HEALTH" → "Sterling Health Clinic"
    - "UNITY CARE" → "Unity Care Clinic"
 
-3. REASON: Be SPECIFIC about the medical care. Look for:
-   - Symptoms mentioned (hip pain, arthritis, hypertension, etc.)
-   - Procedures (X-ray, surgery, evaluation, follow-up)
-   - Diagnoses (arthroplasty, arthritis, etc.)
-   
-   GOOD reasons:
-   - "Hip pain; X-ray shows arthritis changes"
-   - "Right total hip replacement surgery"
-   - "Post-op follow-up, stable"
-   - "Breast lump and hypertension evaluation"
-   
-   AVOID these generic terms:
-   - "Medical Visit" 
-   - "Hospital Records" (unless no specific info available)
-   - "Office Treatment Records" (unless no specific info available)
+3. REASON: Be SPECIFIC. Look for symptoms, procedures, diagnoses.
+   Good: "Hip pain; X-ray shows arthritis changes", "Right total hip replacement surgery"
+   Avoid: "Medical Visit", "Hospital Records"
 
-SKIP these entirely (not medical encounters):
-- "Disability Report", "Function Report"
-- "MER", "ROC", "HIT Response" 
-- "Evidence Requested"
-- Lines that just list document titles without medical content
+4. REF_PAGE: 
+   - If the text shows "Pg XX" after the record, use XX as the ref_page
+   - Otherwise use {page_num}
+
+SKIP: "Disability Report", "Function Report", "MER", "HIT Response", "Evidence Requested"
 
 Return JSON array:
-[{{"date": "07/21/2021", "provider": "Sterling Health Clinic", "reason": "Routine outpatient treatment for joint pain", "ref_page": {page_num}}}]"""
+[{{"date": "07/21/2021", "provider": "Sterling Health Clinic", "reason": "Routine outpatient treatment for joint pain", "ref_page": 34}}]"""
 
     resp = model.generate_content(prompt, generation_config={"temperature": 0.0})
 

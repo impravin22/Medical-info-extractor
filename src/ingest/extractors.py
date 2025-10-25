@@ -127,8 +127,8 @@ def extract_events(pages: List[str], model) -> List[Event]:
     """Extract medical events from pages."""
     events = []
 
-    # Process pages
-    for page_idx, page in enumerate(pages[:15], start=1):
+    # Process first 50 pages for assessment (adjust for full PDF processing)
+    for page_idx, page in enumerate(pages[:50], start=1):
         if len(page.strip()) < 50:
             continue
 
