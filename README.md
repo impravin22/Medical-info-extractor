@@ -306,23 +306,10 @@ The project is configured for GitHub Actions with:
 - LLM extraction: 1-3 minutes (50 API calls for 50 pages)
 - Document rendering: < 1 second
 
-**Note**: Processing time scales with page count. For this assessment, 50 pages are processed. For production use with large PDFs, consider:
-- Implementing parallel LLM calls for faster processing
-- Caching extracted data for repeated runs
-- Adjusting page limit based on document size and requirements
+**Note**: Processing time scales with page count. For this assessment, 50 pages are processed. For production use with large PDFs(like this one has 504 pages), consider:
+- Adjusting page limit based on document size(504 pages) and requirements. I did not process all the pages due to time and cost constraints. I could not use open source LLMs on my machine as I am using Macbook and it does not really has much of a storage.
 
 ## License
 
-This project is developed as a technical assessment for a Senior AI Developer position.
+This project is developed as a technical assessment for a Superinsight.
 
-## Contact
-
-For questions or issues, please contact the repository maintainer.
-
-## Acknowledgments
-
-- Google Gemini API for LLM capabilities
-- pdfplumber for PDF text extraction
-- python-docx for document generation
-- Pydantic for data validation
-- Ruff and Pyright for code quality tools
