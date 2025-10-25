@@ -61,7 +61,7 @@ medical-summary-builder/
 ### Prerequisites
 - Python 3.11 or higher
 - uv package manager
-- Google Gemini API key
+- Nebius API key (primary) or Google Gemini API key (fallback)
 
 ### Setup
 
@@ -82,9 +82,10 @@ uv sync --dev
 echo "MSB_LLM_BACKEND=nebius" > .env
 echo "MSB_NEBIUS_API_KEY=your_nebius_api_key_here" >> .env
 echo "MSB_NEBIUS_MODEL=NousResearch/Hermes-4-405B" >> .env
+echo "MSB_NEBIUS_BASE_URL=https://api.studio.nebius.ai/v1/" >> .env
 
 # Alternative: Use Gemini (Fallback)
-# echo "MSB_LLM_BACKEND=gemini" > .env
+# echo "MSB_LLM_BACKEND=gemini" >> .env
 # echo "MSB_GEMINI_API_KEY=your_gemini_api_key_here" >> .env
 # echo "MSB_GEMINI_MODEL=gemini-1.5-flash" >> .env
 ```
@@ -248,9 +249,12 @@ All extracted data is validated through Pydantic models with:
 
 | Variable | Description | Default | Required |
 |----------|-------------|---------|----------|
-| `MSB_LLM_BACKEND` | LLM provider (gemini/hf) | gemini | No |
+| `MSB_LLM_BACKEND` | LLM provider (nebius/gemini/hf) | nebius | No |
+| `MSB_NEBIUS_API_KEY` | Nebius API key | None | Yes (for Nebius) |
+| `MSB_NEBIUS_MODEL` | Nebius model name | NousResearch/Hermes-4-405B | No |
+| `MSB_NEBIUS_BASE_URL` | Nebius API base URL | https://api.studio.nebius.ai/v1/ | No |
 | `MSB_GEMINI_API_KEY` | Google Gemini API key | None | Yes (for Gemini) |
-| `MSB_GEMINI_MODEL` | Gemini model name | gemini-2.5-flash | No |
+| `MSB_GEMINI_MODEL` | Gemini model name | gemini-1.5-flash | No |
 | `MSB_LLM_MODEL` | Hugging Face model | Qwen/Qwen2.5-7B-Instruct | No |
 
 ### Settings File
@@ -323,10 +327,8 @@ The project is configured for GitHub Actions with:
 
 ## Performance
 
-- Average processing time: 1-3 minutes per document (depends on LLM API response time and page count)
-- PDF parsing: < 1 second
-- LLM extraction: 1-3 minutes (50 API calls for 50 pages)
-- Document rendering: < 1 second
+- Average processing time depends on document length; this repo processes the entire PDF by default.
+- For very large PDFs, expect proportionally more API calls (one per page for events).
 
 **Note**: Processing time scales with page count. For this assessment, 50 pages are processed. For production use with large PDFs(like this one has 504 pages), consider:
 - Adjusting page limit based on document size(504 pages) and requirements. I did not process all the pages due to time and cost constraints. I could not use open source LLMs on my machine as I am using Macbook and it does not really has much of a storage.

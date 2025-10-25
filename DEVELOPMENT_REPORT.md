@@ -36,13 +36,18 @@ This project implements an AI-powered medical document extraction system that pr
 
 #### Medical Events Timeline
 - **Processes ENTIRE PDF (all 504 pages)** to ensure comprehensive extraction
-- Extracted 93 unique medical events (vs previous 15-event limitation)
+- **Extracted 234 unique medical events** spanning 11 years (2013-2024)
+- Captures complete medical history including:
+  - 2013 MRI results (shoulder tears, spinal herniation)
+  - Progressive condition documentation
+  - Recent surgical interventions (2024)
 - Chronologically sorted events with:
   - Date
   - Healthcare provider (normalized names)
   - Specific medical reason for visit
   - Page reference from source document
-- Diverse page references spanning entire document range
+- Date range filtering: 1900-2030 (no valid historical data excluded)
+- Smart deduplication: preserves same-day visits with different reasons
 - Progress tracking every 10 pages for transparency
 
 ### 3. Output Formats
@@ -190,12 +195,19 @@ uv run pyright                  # Type check
 
 ## Configuration
 
-### Environment Variables
+### Environment Variables (Primary: Nebius)
 ```bash
-MSB_LLM_BACKEND=gemini              # LLM provider (gemini/hf)
-MSB_GEMINI_API_KEY=your_key_here    # Google Gemini API key
-MSB_GEMINI_MODEL=gemini-2.5-flash   # Model name
-MSB_LLM_MODEL=Qwen/Qwen2.5-7B       # Alternative: HF model
+MSB_LLM_BACKEND=nebius
+MSB_NEBIUS_API_KEY=your_nebius_api_key_here
+MSB_NEBIUS_MODEL=NousResearch/Hermes-4-405B
+MSB_NEBIUS_BASE_URL=https://api.studio.nebius.ai/v1/
+```
+
+### Alternative (Fallback: Gemini)
+```bash
+MSB_LLM_BACKEND=gemini
+MSB_GEMINI_API_KEY=your_gemini_api_key_here
+MSB_GEMINI_MODEL=gemini-1.5-flash
 ```
 
 ### Processing Limits
