@@ -14,7 +14,6 @@ venv/
 # Build/output
 dist/
 build/
-out/
 
 # Env
 .env
